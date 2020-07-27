@@ -21,8 +21,12 @@ package org.ballerinalang.stdlib.io.nativeimpl;
 import org.ballerinalang.jvm.JSONParser;
 import org.ballerinalang.jvm.XMLFactory;
 import org.ballerinalang.jvm.util.exceptions.BallerinaException;
+import org.ballerinalang.jvm.values.MapValue;
+import org.ballerinalang.jvm.values.MapValueImpl;
 import org.ballerinalang.jvm.values.ObjectValue;
 import org.ballerinalang.jvm.values.XMLValue;
+import org.ballerinalang.jvm.values.api.BMap;
+import org.ballerinalang.jvm.values.api.BObject;
 import org.ballerinalang.jvm.values.api.BString;
 import org.ballerinalang.jvm.values.utils.StringUtils;
 import org.ballerinalang.stdlib.io.channels.base.Channel;
@@ -31,11 +35,17 @@ import org.ballerinalang.stdlib.io.readers.CharacterChannelReader;
 import org.ballerinalang.stdlib.io.utils.BallerinaIOException;
 import org.ballerinalang.stdlib.io.utils.IOConstants;
 import org.ballerinalang.stdlib.io.utils.IOUtils;
+import org.ballerinalang.stdlib.io.utils.PropertyUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.yaml.snakeyaml.DumperOptions;
+import org.yaml.snakeyaml.Yaml;
 
 import java.io.IOException;
 import java.nio.channels.ClosedChannelException;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
 
 import static org.ballerinalang.stdlib.io.utils.IOConstants.CHARACTER_CHANNEL_NAME;
 
@@ -104,6 +114,29 @@ public class CharacterChannelUtils {
         }
     }
 
+    public static Object readProperty(ObjectValue channel, BString key) {
+        CharacterChannel charChannel = (CharacterChannel) channel.getNativeData(CHARACTER_CHANNEL_NAME);
+        CharacterChannelReader reader = new CharacterChannelReader(charChannel);
+        return PropertyUtils.readProperty(reader, key);
+    }
+
+    public static Object readYaml(ObjectValue channel) {
+        CharacterChannel charChannel = (CharacterChannel) channel.getNativeData(CHARACTER_CHANNEL_NAME);
+        CharacterChannelReader reader = new CharacterChannelReader(charChannel);
+        Yaml yaml = new Yaml();
+        Object loadedYaml = yaml.load(reader);
+        Map<String, Object> yamlMap = (Map<String, Object>) loadedYaml;
+        Iterator<Map.Entry<String, Object>> itr = yamlMap.entrySet().iterator();
+        MapValue<BString, Object> bMap = new MapValueImpl<>();
+        while (itr.hasNext()) {
+            Map.Entry<String, Object> entry = itr.next();
+            bMap.put(org.ballerinalang.jvm.StringUtils.fromString(entry.getKey()),
+                    entry.getValue().toString()
+            );
+        }
+        return bMap;
+    }
+
     public static Object close(ObjectValue channel) {
         CharacterChannel charChannel = (CharacterChannel) channel.getNativeData(CHARACTER_CHANNEL_NAME);
         try {
@@ -141,6 +174,41 @@ public class CharacterChannelUtils {
             CharacterChannel characterChannel = (CharacterChannel) characterChannelObj
                     .getNativeData(CHARACTER_CHANNEL_NAME);
             IOUtils.writeFull(characterChannel, content.toString());
+        } catch (BallerinaIOException e) {
+            return IOUtils.createError(e);
+        }
+        return null;
+    }
+
+    public static Object storeProperties(ObjectValue characterChannelObj, BMap<BString, BString> properties) {
+        try {
+            CharacterChannel characterChannel = (CharacterChannel) characterChannelObj
+                    .getNativeData(CHARACTER_CHANNEL_NAME);
+            String content = PropertyUtils.getWritablePropertyContent(properties);
+            IOUtils.writeFull(characterChannel, content);
+        } catch (BallerinaIOException e) {
+            return IOUtils.createError(e);
+        }
+        return null;
+    }
+
+    public static Object writeYaml(ObjectValue characterChannelObj, BMap<BString, BObject> yamlData) {
+        try {
+            CharacterChannel characterChannel = (CharacterChannel) characterChannelObj
+                    .getNativeData(CHARACTER_CHANNEL_NAME);
+            Iterator<Map.Entry<BString, BObject>> itr = yamlData.entrySet().iterator();
+            Map<String, Object> jMap = new HashMap<>();
+            while (itr.hasNext()) {
+                Map.Entry<BString, BObject> entry = itr.next();
+                jMap.put(entry.getKey().getValue(), entry.getValue().getNativeData());
+            }
+
+            DumperOptions options = new DumperOptions();
+            options.setDefaultFlowStyle(DumperOptions.FlowStyle.BLOCK);
+            options.setPrettyFlow(true);
+            Yaml yaml = new Yaml(options);
+            String output = yaml.dump(jMap);
+            IOUtils.writeFull(characterChannel, output);
         } catch (BallerinaIOException e) {
             return IOUtils.createError(e);
         }

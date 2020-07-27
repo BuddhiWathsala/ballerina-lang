@@ -34,6 +34,7 @@ dependencies {
     implementation project(':ballerina-runtime')
     implementation project(':ballerina-logging')
     implementation project(':ballerina-runtime-api')
+    implementation 'org.wso2.orbit.org.yaml:snakeyaml'
 
     testCompile project(path: ':ballerina-test-common', configuration: 'tests')
     testCompile project(path: ':ballerina-test-utils', configuration: 'shadow')

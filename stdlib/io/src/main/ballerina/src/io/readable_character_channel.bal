@@ -64,6 +64,25 @@ public type ReadableCharacterChannel object {
         return readXmlExtern(self);
     }
 
+    # Reads a property.
+    # ```ballerina
+    # string|io:Error result = readableCharChannel.readProperty(key);
+    # ```
+    # + key - The property key needs to read.
+    # + return - The read property value or else an `io:Error`
+    public function readProperty(string key) returns @tainted string|Error {
+        return readPropertyExtern(self, key);
+    }
+
+    # Reads an property.
+    # ```ballerina
+    # json|io:Error result = readableCharChannel.readXml();
+    # ```
+    # + return - The read XML or else an `io:Error`
+    public function readYaml() returns @tainted any {
+        return readYamlExtern(self);
+    }
+
 # Closes a given character channel.
 # ```ballerina
 # io:Error? err = readableCharChannel.close();
@@ -94,6 +113,16 @@ function readJsonExtern(ReadableCharacterChannel characterChannel) returns @tain
 
 function readXmlExtern(ReadableCharacterChannel characterChannel) returns @tainted xml|Error = @java:Method {
     name: "readXml",
+    class: "org.ballerinalang.stdlib.io.nativeimpl.CharacterChannelUtils"
+} external;
+
+function readPropertyExtern(ReadableCharacterChannel characterChannel, string key) returns @tainted string|Error = @java:Method {
+    name: "readProperty",
+    class: "org.ballerinalang.stdlib.io.nativeimpl.CharacterChannelUtils"
+} external;
+
+function readYamlExtern(ReadableCharacterChannel characterChannel) returns @tainted any = @java:Method {
+    name: "readYaml",
     class: "org.ballerinalang.stdlib.io.nativeimpl.CharacterChannelUtils"
 } external;
 

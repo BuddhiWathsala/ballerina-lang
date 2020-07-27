@@ -21,6 +21,7 @@ public type WritableCharacterChannel object {
 
     private WritableByteChannel bChannel;
     private string charset;
+    private map<string> properties;
 
     # Constructs a `WritableByteChannel` from a given `WritableByteChannel` and `Charset`.
     # 
@@ -29,6 +30,7 @@ public type WritableCharacterChannel object {
     public function init(WritableByteChannel bChannel, string charset) {
         self.bChannel = bChannel;
         self.charset = charset;
+        self.properties = {};
         initWritableCharacterChannel(self, bChannel, charset);
     }
 
@@ -66,6 +68,41 @@ public type WritableCharacterChannel object {
         return writeXmlExtern(self, content);
     }
 
+    # Set a property using a key-value pair.
+    # ```ballerina
+    # io:Error? err = writableCharChannel.setProperty(key, value);
+    # ```
+    #
+    # + key - The property key.
+    # + value - The property value.
+    # + return - `()` or else `io:Error` if any error occurred
+    public function setProperty(string key, string value) returns Error? {
+        self.properties[key] = value;
+    }
+
+    # Write already setted properties to the given file.
+    # ```ballerina
+    # io:Error? err = writableCharChannel.storeProperties();
+    # ```
+    #
+    # + return - `()` or else `io:Error` if any error occurred
+    public function storeProperties() returns Error? {
+        return storePropertiesExtern(self, self.properties);
+    }
+
+    # Writes a given XML to the channel.
+    # ```ballerina
+    # io:Error? err = writableCharChannel.writeXml(inputXml, 0);
+    # ```
+    #
+    # + content - The XML, which should be written
+    # + return - `()` or else `io:Error` if any error occurred
+    public function writeYaml(map<any> content) returns Error? {
+        return writeYamlExtern(self, content);
+    }
+
+
+
 # Closes a given `WritableCharacterChannel` channel.
 # ```ballerina
 # io:Error err = writableCharChannel.close();
@@ -96,6 +133,16 @@ function writeJsonExtern(WritableCharacterChannel characterChannel, json content
 
 function writeXmlExtern(WritableCharacterChannel characterChannel, xml content) returns Error? = @java:Method {
     name: "writeXml",
+    class: "org.ballerinalang.stdlib.io.nativeimpl.CharacterChannelUtils"
+} external;
+
+function storePropertiesExtern(WritableCharacterChannel characterChannel, map<string> properties) returns Error? = @java:Method {
+    name: "storeProperties",
+    class: "org.ballerinalang.stdlib.io.nativeimpl.CharacterChannelUtils"
+} external;
+
+function writeYamlExtern(WritableCharacterChannel characterChannel, map<any> content) returns Error? = @java:Method {
+    name: "writeYaml",
     class: "org.ballerinalang.stdlib.io.nativeimpl.CharacterChannelUtils"
 } external;
 
